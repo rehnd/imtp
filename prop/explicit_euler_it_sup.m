@@ -1,16 +1,17 @@
-function psi_n = explicit_euler_it(H,en,psi,nsteps,dt,plots)
+function psi_n = explicit_euler_it_sup(H,en,psi,nsteps,dt,plots)
 %Explicit Euler in Imaginary time
 %    Propagates solution according to
 %     \psi(t+dt) = \psi(t) - dt*H\psi(t)
 
-fprintf('\nRunning Second Order Diff in Imaginary time\n')
+fprintf('\nRunning Second Order Diff in Imaginary time, Superposition\n')
 
 % Set psi old to current psi
 psi_o  = psi;
 psi_ex = psi; % Exact solution 
-err = zeros(nsteps,4); % error vectors
-psi2 = zeros(nsteps,4);
+err = zeros(nsteps,1); % error vectors
+psi2 = zeros(nsteps,1);
 orthm = zeros(nsteps, 1);
+psi_sup = zeros(nsteps,1);
 
 % Movie setup crap
 f = figure('Visible',plots.showm);
@@ -29,28 +30,31 @@ for k = 1:nsteps
     psi_n(:,1:4) = psi_n(:,1:4).*exp((1-1i)*X(:,1:4)*dt);
     
     psi_o = psi_n;
+    if mod(k,1) == 0
+        psi_o = psi_o./meshgrid(sqrt(sum(abs(psi_o).^2,1)));
+    end
+   
+    psi_sup = sum(psi_n(:,1:4), 2)/sqrt(4);
     
-    psi2(k,1:4) = dot(psi_o(:,1:4),psi_o(:,1:4));
+    psi2(k,1) = dot(psi_sup,psi_sup);
     orthm(k) = dot(psi(:,1),psi(:,2))+dot(psi(:,1),psi(:,3))+...
         dot(psi(:,1),psi(:,4))+dot(psi(:,2),psi(:,3))+...
         dot(psi(:,2),psi(:,4))+dot(psi(:,3),psi(:,4));
     
-    if mod(k,1) == 0
-        psi_o = psi_o./meshgrid(sqrt(sum(abs(psi_o).^2,1)));
-    end
     psi_ex(:,1:4) = psi_ex(:,1:4).*exp(-1i*X(:,1:4)*dt);
+    psi_ex_sup = sum(psi_ex(:,1:4),2)/sqrt(4);
     
-    err(k,1:4) = sqrt(sum(abs((psi_ex(:,1:4) - psi_n(:,1:4))).^2,1));
+    err(k,1) = sqrt(sum(abs((psi_ex_sup(:,1) - psi_sup(:,1))).^2,1));
 
     if strcmp(plots.showm, 'on') || plots.savem
-        plot(real(psi_o(:,1:4)));
+        plot(real(psi_sup(:,1)));
         drawnow;
         Figs(k) = getframe;
     end
 end
 fprintf('Done. Ran for %i time steps\n',nsteps)
 
-plot_err(err,psi2,1,plots,nsteps);
+plot_err(err,psi2,3,plots,nsteps);
 
 % Options for showing/saving movies
 if strcmp(plots.showm,'on')
@@ -58,13 +62,13 @@ if strcmp(plots.showm,'on')
 end
 if plots.savem
     fprintf('Saving movie data. Could take a while...\n')
-    wObj = VideoWriter(['mov/',plots.fn{1},'.avi']);
+    wObj = VideoWriter(['mov/',plots.fn{3},'.avi']);
     open(wObj);
     for j = 1:nsteps
         writeVideo(wObj,Figs(j));
     end
     close(wObj);
-    fprintf('Done writing %s\n',plots.fn{1})
+    fprintf('Done writing %s\n',plots.fn{3})
 end
 
 end

@@ -1,9 +1,9 @@
-function psi_n = explicit_euler_it(H,en,psi,nsteps,dt,plots)
-%Explicit Euler in Imaginary time
+function psi_n = sec_order_diff_rt(H,en,psi,nsteps,dt,plots)
+%Second Order difference in Imaginary time
 %    Propagates solution according to
-%     \psi(t+dt) = \psi(t) - dt*H\psi(t)
+%     \psi(t+dt) = \psi(t-dt) - 2dt*H\psi(t)
 
-fprintf('\nRunning Second Order Diff in Imaginary time\n')
+fprintf('\nRunning Sec Order Diff in Real time\n')
 
 % Set psi old to current psi
 psi_o  = psi;
@@ -21,22 +21,31 @@ ax.NextPlot = 'replaceChildren';
 f.Renderer = 'zbuffer';
 Figs(nsteps) = struct('cdata',[],'colormap',[]);
 
-%psi_o = psi_o.*exp(1i*meshgrid(diag(en))*dt);
 X = meshgrid(diag(en));
 
+% psi_p = psi present, psi_o = psi old, psi_n = psi_new
+% Need psi present to get started
+psi_p = psi_o*exp((1-1i)*X*dt);% - i*dt*H*psi_o;
+%psi_p(:,1:4) = psi_p(:,1:4).*exp((1-1i)*X(:,1:4)*dt);
+
+%psi_ex = psi_ex.*exp(-1i*X*dt);
+
 for k = 1:nsteps
-    psi_n = psi_o - dt*H*psi_o;
-    psi_n(:,1:4) = psi_n(:,1:4).*exp((1-1i)*X(:,1:4)*dt);
+    % Update psi_n and apply e^{(1-i)dt}
+    psi_n = psi_o - 2i*dt*H*psi_p;
+    psi_n(:,1:4) = psi_n(:,1:4).*exp((2-2i)*X(:,1:4)*dt);
     
-    psi_o = psi_n;
+    % store psi_o as psi_p
+    psi_o = psi_p;
+    psi_p = psi_n;
     
-    psi2(k,1:4) = dot(psi_o(:,1:4),psi_o(:,1:4));
+    psi2(k,1:4) = dot(psi_n(:,1:4),psi_n(:,1:4));
     orthm(k) = dot(psi(:,1),psi(:,2))+dot(psi(:,1),psi(:,3))+...
         dot(psi(:,1),psi(:,4))+dot(psi(:,2),psi(:,3))+...
         dot(psi(:,2),psi(:,4))+dot(psi(:,3),psi(:,4));
     
     if mod(k,1) == 0
-        psi_o = psi_o./meshgrid(sqrt(sum(abs(psi_o).^2,1)));
+        psi_n = psi_n./meshgrid(sqrt(sum(abs(psi_n).^2,1)));
     end
     psi_ex(:,1:4) = psi_ex(:,1:4).*exp(-1i*X(:,1:4)*dt);
     
@@ -50,7 +59,7 @@ for k = 1:nsteps
 end
 fprintf('Done. Ran for %i time steps\n',nsteps)
 
-plot_err(err,psi2,1,plots,nsteps);
+plot_err(err,psi2,8,plots,nsteps);
 
 % Options for showing/saving movies
 if strcmp(plots.showm,'on')
@@ -58,13 +67,13 @@ if strcmp(plots.showm,'on')
 end
 if plots.savem
     fprintf('Saving movie data. Could take a while...\n')
-    wObj = VideoWriter(['mov/',plots.fn{1},'.avi']);
+    wObj = VideoWriter(['mov/',plots.fn{8},'.avi']);
     open(wObj);
     for j = 1:nsteps
         writeVideo(wObj,Figs(j));
     end
     close(wObj);
-    fprintf('Done writing %s\n',plots.fn{1})
+    fprintf('Done writing %s\n',plots.fn{8})
 end
 
 end

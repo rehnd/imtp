@@ -1,5 +1,5 @@
 function psi_n = explicit_euler_rt(H,en,psi,nsteps,dt,plots)
-%Explicit Euler in Imaginary time
+%Explicit Euler in Real time
 %    Propagates solution according to
 %     \psi(t+dt) = \psi(t) - dt*H\psi(t)
 
@@ -42,14 +42,15 @@ for k = 1:nsteps
 end
 fprintf('Done. Ran for %i time steps\n',nsteps)
 
-plot_err(err,psi2,plots.fn{2},plots,nsteps);
+plot_err(err,psi2,2,plots,nsteps);
 
 % Options for showing/saving movies
 if strcmp(plots.showm,'on')
     movie(f,Figs,2,30)
+end
 if plots.savem
     fprintf('Saving movie data. Could take a while...\n')
-    wObj = VideoWriter([plots.fn{2},'.avi']);
+    wObj = VideoWriter(['mov/',plots.fn{2},'.avi']);
     open(wObj);
     for j = 1:nsteps
         writeVideo(wObj,Figs(j));
